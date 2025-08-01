@@ -1122,11 +1122,42 @@ html {
     margin-bottom: 15px;
 }
 
-.contact-form {
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
-    padding: 40px;
-    border-radius: 20px;
+/* Contact Section Enhancements */
+.contact-item small {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8em;
+    font-style: italic;
+    margin-top: 5px;
+    display: block;
+}
+
+.social-purpose {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1em;
+    margin-bottom: 20px;
+    text-align: center;
+    font-style: italic;
+}
+
+.social-links h4 {
+    color: #fff;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 1.2em;
+}
+
+.social-links .social-link {
+    display: block;
+    margin: 10px 0;
+    padding: 8px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.social-links .social-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(5px);
 }
 
 .contact-form input,
@@ -1463,4 +1494,42 @@ html {
     .feature-icon {
         font-size: 1.5em;
     }
+}
+
+/* Contact Section Enhancements */
+.contact-item small {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8em;
+    font-style: italic;
+    margin-top: 5px;
+    display: block;
+}
+
+.social-purpose {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1em;
+    margin-bottom: 20px;
+    text-align: center;
+    font-style: italic;
+}
+
+.social-links h4 {
+    color: #fff;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 1.2em;
+}
+
+.social-links .social-link {
+    display: block;
+    margin: 10px 0;
+    padding: 8px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.social-links .social-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(5px);
 }
