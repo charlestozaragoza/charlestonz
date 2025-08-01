@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fun Interactive Family Website</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="Fun Interactive Family Website - Games, Entertainment, Photo Sharing, and Family Connection">
+    <meta name="keywords" content="family, games, entertainment, interactive, mobile, memory game, puzzle, trivia, drawing">
+    <meta name="author" content="Charleston Zaragoza">
+    <title>Fun Interactive Family Website - Games & Entertainment</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
@@ -227,33 +230,83 @@
             </div>
             
             <div class="entertainment-grid">
-                <div class="game-card interactive-card" onclick="playGame('memory')">
+                <div class="game-card" onclick="openGame('memory')">
                     <div class="game-icon">🧠</div>
-                    <h3>Memory Game</h3>
-                    <p>Test your memory skills!</p>
-                    <button class="play-btn">Play Now!</button>
+                    <h3 class="game-title">Memory Master</h3>
+                    <p class="game-description">Test your memory with colorful cards! Match pairs and improve your brain power. Perfect for all ages with adjustable difficulty levels.</p>
+                    <div class="game-tags">
+                        <span class="tag">Memory</span>
+                        <span class="tag">Brain Training</span>
+                    </div>
                 </div>
-                <div class="game-card interactive-card" onclick="playGame('quiz')">
-                    <div class="game-icon">🤔</div>
-                    <h3>Family Quiz</h3>
-                    <p>How well do you know us?</p>
-                    <button class="play-btn">Start Quiz!</button>
+
+                <div class="game-card" onclick="openGame('puzzle')">
+                    <div class="game-icon">🧩</div>
+                    <h3 class="game-title">Sliding Puzzle</h3>
+                    <p class="game-description">Solve colorful sliding puzzles! Arrange numbered tiles to complete the picture. Multiple difficulty levels available.</p>
+                    <div class="game-tags">
+                        <span class="tag">Logic</span>
+                        <span class="tag">Problem Solving</span>
+                    </div>
                 </div>
-                <div class="game-card interactive-card" onclick="playGame('draw')">
+
+                <div class="game-card" onclick="openGame('trivia')">
+                    <div class="game-icon">🎯</div>
+                    <h3 class="game-title">Family Trivia</h3>
+                    <p class="game-description">Fun questions for the whole family! Test your knowledge on various topics from nature to sports. Educational and entertaining!</p>
+                    <div class="game-tags">
+                        <span class="tag">Knowledge</span>
+                        <span class="tag">Educational</span>
+                    </div>
+                </div>
+
+                <div class="game-card" onclick="openGame('drawing')">
                     <div class="game-icon">🎨</div>
-                    <h3>Drawing Board</h3>
-                    <p>Express your creativity!</p>
-                    <button class="play-btn">Draw!</button>
+                    <h3 class="game-title">Art Canvas</h3>
+                    <p class="game-description">Create beautiful digital art! Draw, paint, and express creativity with colors, brushes, and tools. Save and share your masterpieces!</p>
+                    <div class="game-tags">
+                        <span class="tag">Creative</span>
+                        <span class="tag">Art</span>
+                    </div>
                 </div>
-                <div class="game-card interactive-card" onclick="playGame('music')">
+
+                <div class="game-card" onclick="openGame('quiz')">
+                    <div class="game-icon">🏆</div>
+                    <h3 class="game-title">Quick Quiz</h3>
+                    <p class="game-description">Fast-paced quiz challenges! Answer questions quickly to score points. Compete with family members and track high scores.</p>
+                    <div class="game-tags">
+                        <span class="tag">Speed</span>
+                        <span class="tag">Competition</span>
+                    </div>
+                </div>
+
+                <div class="game-card" onclick="openGame('music')">
                     <div class="game-icon">🎵</div>
-                    <h3>Music Player</h3>
-                    <p>Listen to family favorites!</p>
-                    <button class="play-btn">Play Music!</button>
+                    <h3 class="game-title">Music Mixer</h3>
+                    <p class="game-description">Create amazing beats and melodies! Play with different instruments, record your music, and enjoy the visual sound effects.</p>
+                    <div class="game-tags">
+                        <span class="tag">Music</span>
+                        <span class="tag">Creative</span>
+                    </div>
                 </div>
             </div>
-            <div class="activity-counter">
-                <p>Games Played Today: <span id="gameCounter">0</span></p>
+            
+            <div class="feature-cards">
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h4>Mobile Optimized</h4>
+                    <p>Perfect touch controls for tablets and phones</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👨‍👩‍👧‍👦</div>
+                    <h4>Family Friendly</h4>
+                    <p>Safe, educational content for all ages</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏆</div>
+                    <h4>Achievement System</h4>
+                    <p>Track progress and celebrate victories</p>
+                </div>
             </div>
         </div>
     </section>

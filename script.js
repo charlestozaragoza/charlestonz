@@ -1523,6 +1523,22 @@ function playGame(gameType) {
     showNotification(`🎮 Starting ${gameType} game! Have fun!`);
 }
 
+// Wrapper function for new game cards
+function openGame(gameType) {
+    // Map new game names to existing game types
+    const gameMapping = {
+        'memory': 'memory',
+        'puzzle': 'puzzle',
+        'trivia': 'trivia',
+        'drawing': 'draw',
+        'quiz': 'quiz',
+        'music': 'music'
+    };
+    
+    const mappedGame = gameMapping[gameType] || gameType;
+    playGame(mappedGame);
+}
+
 function createMemoryGame() {
     const emojis = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼'];
     const gameEmojis = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
