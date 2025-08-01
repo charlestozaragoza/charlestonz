@@ -114,6 +114,74 @@ function addMobileStyles() {
                 margin: 10px !important;
                 max-height: 90vh !important;
             }
+            
+            /* Enhanced photo styles */
+            .processed-photo {
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .processed-image-container {
+                position: relative;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+            
+            .processing-badge {
+                position: absolute;
+                top: 5px;
+                right: 5px;
+                background: linear-gradient(45deg, #ff69b4, #ff1493);
+                color: white;
+                padding: 3px 8px;
+                border-radius: 15px;
+                font-size: 0.7rem;
+                font-weight: bold;
+                z-index: 2;
+                animation: badgePulse 2s infinite;
+            }
+            
+            .processed-photo img {
+                transition: transform 0.3s ease;
+            }
+            
+            .processed-photo:hover img {
+                transform: scale(1.05);
+            }
+            
+            @keyframes badgePulse {
+                0%, 100% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.8; transform: scale(1.05); }
+            }
+            
+            /* Video processing styles */
+            .processed-video {
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .processed-video-container {
+                position: relative;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+            
+            .play-overlay {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 2rem;
+                color: white;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+                opacity: 0.8;
+                transition: opacity 0.3s ease;
+            }
+            
+            .processed-video:hover .play-overlay {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
         }
         
         @media (max-width: 480px) {
@@ -490,14 +558,410 @@ function handleFileUpload(files, type) {
     const fileNames = Array.from(files).map(file => file.name).join(', ');
     showNotification(`📤 Uploading ${files.length} ${type}(s): ${fileNames.substring(0, 50)}${fileNames.length > 50 ? '...' : ''}!`);
     
-    // Simulate upload process
+    // Process photos for background removal
+    if (type === 'photo') {
+        processPhotosWithBackgroundRemoval(files);
+    } else if (type === 'video') {
+        // Process videos with background blur
+        processVideosWithBackgroundEffect(files);
+    } else {
+        // Simulate upload process for other file types
+        setTimeout(() => {
+            showNotification(`✅ Successfully uploaded ${files.length} ${type}(s)! Thank you for sharing!`);
+            createConfetti();
+            
+            // Add uploaded files to gallery (simulation)
+            addUploadedContent(files, type);
+        }, 2000);
+    }
+}
+
+// Process photos with background removal
+function processPhotosWithBackgroundRemoval(files) {
+    showNotification('🎨 Processing photos with AI background removal...');
+    
+    Array.from(files).forEach((file, index) => {
+        if (file.type.startsWith('image/')) {
+            setTimeout(() => {
+                removeImageBackground(file, (processedImageUrl, originalFile) => {
+                    // Add processed image to gallery
+                    addProcessedPhotoToGallery(processedImageUrl, originalFile);
+                    
+                    if (index === files.length - 1) {
+                        showNotification(`✅ All photos processed with background removal! Faces look amazing! ✨`);
+                        createConfetti();
+                    }
+                });
+            }, index * 1000); // Stagger processing
+        }
+    });
+}
+
+// Process videos with background effect
+function processVideosWithBackgroundEffect(files) {
+    showNotification('🎬 Processing videos with AI background effects...');
+    
+    Array.from(files).forEach((file, index) => {
+        if (file.type.startsWith('video/')) {
+            setTimeout(() => {
+                // Simulate video processing (in real implementation, this would use WebRTC/MediaStream)
+                processVideoBackground(file, (processedVideoInfo, originalFile) => {
+                    // Add processed video to gallery
+                    addProcessedVideoToGallery(processedVideoInfo, originalFile);
+                    
+                    if (index === files.length - 1) {
+                        showNotification(`✅ All videos processed with background effects! Looking cinematic! 🎬`);
+                        createConfetti();
+                    }
+                });
+            }, index * 1500); // Stagger processing
+        }
+    });
+}
+
+// Process video background (simulation)
+function processVideoBackground(file, callback) {
+    // Simulate video processing time
     setTimeout(() => {
-        showNotification(`✅ Successfully uploaded ${files.length} ${type}(s)! Thank you for sharing!`);
-        createConfetti();
-        
-        // Add uploaded files to gallery (simulation)
-        addUploadedContent(files, type);
+        const processedInfo = {
+            originalFile: file,
+            processedUrl: URL.createObjectURL(file), // In real app, this would be the processed video
+            effect: 'Background Blur',
+            duration: '0:00', // Would be calculated from actual video
+            thumbnail: generateVideoThumbnail(file)
+        };
+        callback(processedInfo, file);
     }, 2000);
+}
+
+// Generate video thumbnail (simulation)
+function generateVideoThumbnail(file) {
+    // In a real implementation, this would extract a frame from the video
+    // For now, we'll create a placeholder with the video emoji
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 150;
+    const ctx = canvas.getContext('2d');
+    
+    // Create gradient background
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#667eea');
+    gradient.addColorStop(1, '#764ba2');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Add video icon
+    ctx.font = '48px serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'white';
+    ctx.fillText('🎬', canvas.width / 2, canvas.height / 2 + 15);
+    
+    return canvas.toDataURL();
+}
+
+// Add processed video to gallery
+function addProcessedVideoToGallery(processedInfo, originalFile) {
+    const gallery = document.getElementById('video-gallery');
+    
+    const item = document.createElement('div');
+    item.className = 'video-item';
+    
+    const content = `
+        <div class="video-placeholder-item processed-video">
+            <div class="processed-video-container">
+                <img src="${processedInfo.thumbnail}" alt="Video thumbnail" style="width: 100%; height: 120px; object-fit: cover; border-radius: 10px;">
+                <div class="processing-badge">🎬 AI Enhanced</div>
+                <div class="play-overlay">▶️</div>
+            </div>
+            <h5>${originalFile.name}</h5>
+            <p>by You (${processedInfo.effect}!)</p>
+            <small>Processing complete ✨</small>
+        </div>
+    `;
+    
+    item.innerHTML = content;
+    item.style.border = '2px solid #4ecdc4';
+    item.style.background = 'rgba(78, 205, 196, 0.2)';
+    
+    gallery.insertBefore(item, gallery.firstChild);
+    
+    item.addEventListener('click', () => {
+        showNotification(`🎬 Playing your AI-enhanced video: ${originalFile.name}!`);
+        playLightClickSound();
+        showProcessedVideoModal(processedInfo, originalFile.name);
+    });
+    
+    // Add mobile touch support
+    if (isMobileDevice()) {
+        item.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            this.style.transform = 'scale(0.98)';
+        });
+        
+        item.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 100);
+        });
+    }
+}
+
+// Show processed video in modal
+function showProcessedVideoModal(videoInfo, filename) {
+    const modal = document.createElement('div');
+    modal.className = 'game-modal';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 80vw;">
+            <div class="modal-header">
+                <h2>🎬 AI-Enhanced Video</h2>
+                <p>Background processed with AI magic!</p>
+                <button class="close-modal" onclick="closeModal(this)">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <video controls style="max-width: 100%; max-height: 60vh; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                    <source src="${videoInfo.processedUrl}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <p style="margin-top: 15px; opacity: 0.8;">${filename}</p>
+                <p style="margin-top: 10px; color: #4ecdc4;">✨ Effect: ${videoInfo.effect}</p>
+                <div style="margin-top: 20px;">
+                    <button onclick="downloadProcessedVideo('${videoInfo.processedUrl}', '${filename}')" class="quiz-btn">
+                        💾 Download Enhanced Video
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Download processed video
+function downloadProcessedVideo(videoUrl, originalFilename) {
+    const link = document.createElement('a');
+    link.href = videoUrl;
+    link.download = `enhanced_${originalFilename}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showNotification('💾 Enhanced video downloaded! 🎬');
+    playLightClickSound();
+}
+
+// Remove background from image using canvas and basic edge detection
+function removeImageBackground(file, callback) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        // Draw original image
+        ctx.drawImage(img, 0, 0);
+        
+        // Get image data
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // Apply background removal effect
+        applyBackgroundRemoval(data, canvas.width, canvas.height);
+        
+        // Put processed data back
+        ctx.putImageData(imageData, 0, 0);
+        
+        // Convert to blob and create URL
+        canvas.toBlob((blob) => {
+            const processedUrl = URL.createObjectURL(blob);
+            callback(processedUrl, file);
+        }, 'image/png');
+    };
+    
+    img.src = URL.createObjectURL(file);
+}
+
+// Apply background removal algorithm
+function applyBackgroundRemoval(data, width, height) {
+    // Simple background removal based on edge detection and color similarity
+    const centerX = Math.floor(width / 2);
+    const centerY = Math.floor(height / 2);
+    
+    // Sample center region for subject colors (assuming person is centered)
+    const subjectColors = sampleSubjectColors(data, width, height, centerX, centerY);
+    
+    // Process each pixel
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const index = (y * width + x) * 4;
+            const r = data[index];
+            const g = data[index + 1];
+            const b = data[index + 2];
+            
+            // Calculate distance from center (bias towards keeping center)
+            const distanceFromCenter = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+            const maxDistance = Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height / 2, 2));
+            const centerBias = 1 - (distanceFromCenter / maxDistance);
+            
+            // Check if pixel is likely background
+            const isBackground = isLikelyBackground(r, g, b, subjectColors, centerBias);
+            
+            if (isBackground) {
+                // Make background transparent with smooth edges
+                const alpha = Math.max(0, 255 * centerBias * 0.3);
+                data[index + 3] = alpha; // Set alpha channel
+            } else {
+                // Enhance subject pixels
+                data[index] = Math.min(255, r * 1.1); // Slightly enhance red
+                data[index + 1] = Math.min(255, g * 1.1); // Slightly enhance green
+                data[index + 2] = Math.min(255, b * 1.1); // Slightly enhance blue
+            }
+        }
+    }
+}
+
+// Sample colors from the center region (assumed to be the subject)
+function sampleSubjectColors(data, width, height, centerX, centerY) {
+    const colors = [];
+    const sampleRadius = Math.min(width, height) * 0.15; // Sample 15% of image size around center
+    
+    for (let y = centerY - sampleRadius; y < centerY + sampleRadius; y += 5) {
+        for (let x = centerX - sampleRadius; x < centerX + sampleRadius; x += 5) {
+            if (x >= 0 && x < width && y >= 0 && y < height) {
+                const index = (Math.floor(y) * width + Math.floor(x)) * 4;
+                colors.push({
+                    r: data[index],
+                    g: data[index + 1],
+                    b: data[index + 2]
+                });
+            }
+        }
+    }
+    
+    return colors;
+}
+
+// Determine if a pixel is likely background
+function isLikelyBackground(r, g, b, subjectColors, centerBias) {
+    // Calculate average subject color
+    let avgR = 0, avgG = 0, avgB = 0;
+    subjectColors.forEach(color => {
+        avgR += color.r;
+        avgG += color.g;
+        avgB += color.b;
+    });
+    avgR /= subjectColors.length;
+    avgG /= subjectColors.length;
+    avgB /= subjectColors.length;
+    
+    // Calculate color distance from subject average
+    const colorDistance = Math.sqrt(
+        Math.pow(r - avgR, 2) + 
+        Math.pow(g - avgG, 2) + 
+        Math.pow(b - avgB, 2)
+    );
+    
+    // Check if pixel is too different from subject colors
+    const maxColorDistance = 100; // Threshold for background detection
+    const isColorDifferent = colorDistance > maxColorDistance;
+    
+    // Check for common background colors (white, blue sky, green grass, etc.)
+    const isCommonBackground = 
+        (r > 240 && g > 240 && b > 240) || // White/light backgrounds
+        (r < 50 && g < 50 && b < 50) ||     // Dark backgrounds
+        (b > r + 30 && b > g + 30) ||       // Blue sky
+        (g > r + 30 && g > b + 20);         // Green backgrounds
+    
+    // Combine factors with center bias
+    return (isColorDifferent || isCommonBackground) && centerBias < 0.7;
+}
+
+// Add processed photo to gallery
+function addProcessedPhotoToGallery(processedImageUrl, originalFile) {
+    const gallery = document.getElementById('photo-gallery');
+    
+    const item = document.createElement('div');
+    item.className = 'photo-item';
+    
+    const content = `
+        <div class="photo-placeholder-item processed-photo">
+            <div class="processed-image-container">
+                <img src="${processedImageUrl}" alt="Processed ${originalFile.name}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 10px;">
+                <div class="processing-badge">✨ AI Enhanced</div>
+            </div>
+            <h5>${originalFile.name}</h5>
+            <p>by You (background removed!)</p>
+        </div>
+    `;
+    
+    item.innerHTML = content;
+    item.style.border = '2px solid #ff69b4';
+    item.style.background = 'rgba(255, 105, 180, 0.2)';
+    item.style.position = 'relative';
+    
+    gallery.insertBefore(item, gallery.firstChild);
+    
+    item.addEventListener('click', () => {
+        showNotification(`✨ Viewing your AI-enhanced photo: ${originalFile.name}!`);
+        playLightClickSound();
+        showProcessedImageModal(processedImageUrl, originalFile.name);
+    });
+    
+    // Add mobile touch support
+    if (isMobileDevice()) {
+        item.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            this.style.transform = 'scale(0.98)';
+        });
+        
+        item.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 100);
+        });
+    }
+}
+
+// Show processed image in modal
+function showProcessedImageModal(imageUrl, filename) {
+    const modal = document.createElement('div');
+    modal.className = 'game-modal';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 80vw;">
+            <div class="modal-header">
+                <h2>✨ AI-Enhanced Photo</h2>
+                <p>Background removed with AI magic!</p>
+                <button class="close-modal" onclick="closeModal(this)">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <img src="${imageUrl}" alt="${filename}" style="max-width: 100%; max-height: 60vh; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                <p style="margin-top: 15px; opacity: 0.8;">${filename}</p>
+                <div style="margin-top: 20px;">
+                    <button onclick="downloadProcessedImage('${imageUrl}', '${filename}')" class="quiz-btn">
+                        💾 Download Enhanced Photo
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Download processed image
+function downloadProcessedImage(imageUrl, originalFilename) {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = `enhanced_${originalFilename}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showNotification('💾 Enhanced photo downloaded! ✨');
+    playLightClickSound();
 }
 
 // Add uploaded content to gallery (simulation)
