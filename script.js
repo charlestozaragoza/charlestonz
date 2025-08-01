@@ -1493,6 +1493,11 @@ function playGame(gameType) {
     gameCounter++;
     updateGameCounter();
     
+    // Add haptic feedback for mobile devices
+    if (isMobileDevice() && navigator.vibrate) {
+        navigator.vibrate(50);
+    }
+    
     switch(gameType) {
         case 'memory':
             showGameModal('Memory Game', 'Match the pairs! 🧠', createMemoryGame());
@@ -1506,21 +1511,35 @@ function playGame(gameType) {
         case 'music':
             playMusicGame();
             break;
+        case 'puzzle':
+            showGameModal('Sliding Puzzle', 'Solve the puzzle! 🧩', createPuzzleGame());
+            break;
+        case 'trivia':
+            showGameModal('Family Trivia', 'How well do you know families? 🏆', createTriviaGame());
+            break;
     }
+    
+    playLightClickSound();
+    showNotification(`🎮 Starting ${gameType} game! Have fun!`);
 }
 
 function createMemoryGame() {
     const emojis = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼'];
     const gameEmojis = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
     
-    let gameHTML = '<div class="memory-game">';
+    // Reset game state
+    flippedCards = [];
+    matchedPairs = 0;
+    
+    let gameHTML = '<div class="memory-game" id="memoryGameGrid">';
     gameEmojis.forEach((emoji, index) => {
-        gameHTML += `<div class="memory-card" data-emoji="${emoji}" onclick="flipCard(this, ${index})" ontouchstart="handleCardTouch(this, ${index})">
+        gameHTML += `<div class="memory-card" data-emoji="${emoji}" data-index="${index}">
             <div class="card-front">?</div>
             <div class="card-back">${emoji}</div>
         </div>`;
     });
     gameHTML += '</div>';
+    gameHTML += '<div class="game-stats"><p>Pairs found: <span id="pairsFound">0</span>/8</p></div>';
     
     return gameHTML;
 }
@@ -1532,11 +1551,109 @@ function handleCardTouch(card, index) {
     flipCard(card, index);
 }
 
+// Enhanced cross-platform card flipping
+function initializeMemoryGameEvents() {
+    const cards = document.querySelectorAll('.memory-card');
+    cards.forEach(card => {
+        // Remove any existing event listeners
+        card.replaceWith(card.cloneNode(true));
+    });
+    
+    // Re-select cards after cloning
+    const newCards = document.querySelectorAll('.memory-card');
+    newCards.forEach(card => {
+        const index = parseInt(card.getAttribute('data-index'));
+        
+        // Universal event handler for all platforms
+        const handleCardClick = (e) => {
+            e.preventDefault();
+            flipCard(card, index);
+        };
+        
+        // Add both mouse and touch events
+        card.addEventListener('click', handleCardClick);
+        card.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            flipCard(card, index);
+        });
+        
+        // Prevent text selection
+        card.style.userSelect = 'none';
+        card.style.webkitUserSelect = 'none';
+        card.style.touchAction = 'manipulation';
+    });
+}
+
+// Create new puzzle game
+function createPuzzleGame() {
+    const puzzleHTML = `
+        <div class="puzzle-game">
+            <div class="puzzle-grid" id="puzzleGrid">
+                ${Array.from({length: 9}, (_, i) => 
+                    `<div class="puzzle-tile" data-position="${i}" ${i === 8 ? 'data-empty="true"' : `data-number="${i + 1}"`}>
+                        ${i === 8 ? '' : i + 1}
+                    </div>`
+                ).join('')}
+            </div>
+            <div class="puzzle-controls">
+                <button onclick="shufflePuzzle()" class="quiz-btn">🔀 Shuffle</button>
+                <button onclick="solvePuzzle()" class="quiz-btn">💡 Solve</button>
+            </div>
+            <div class="game-stats">
+                <p>Moves: <span id="moveCount">0</span></p>
+            </div>
+        </div>
+    `;
+    return puzzleHTML;
+}
+
+// Create new trivia game
+function createTriviaGame() {
+    const triviaQuestions = [
+        {
+            question: "What percentage of families eat dinner together at least 4 times a week?",
+            options: ["25%", "50%", "75%", "90%"],
+            correct: 2,
+            explanation: "About 75% of families try to eat dinner together regularly!"
+        },
+        {
+            question: "What's the most popular family activity worldwide?",
+            options: ["Watching TV", "Playing games", "Going to parks", "Shopping"],
+            correct: 0,
+            explanation: "Watching TV together is still the #1 family activity globally!"
+        },
+        {
+            question: "How many photos does the average family take per year?",
+            options: ["500", "1,000", "2,500", "5,000"],
+            correct: 2,
+            explanation: "Families take about 2,500 photos per year on average!"
+        }
+    ];
+    
+    const randomQuestion = triviaQuestions[Math.floor(Math.random() * triviaQuestions.length)];
+    
+    const triviaHTML = `
+        <div class="trivia-game">
+            <h3>${randomQuestion.question}</h3>
+            <div class="trivia-options">
+                ${randomQuestion.options.map((option, index) => 
+                    `<button class="trivia-option" onclick="selectTriviaAnswer(${index}, ${randomQuestion.correct}, '${randomQuestion.explanation}')">${option}</button>`
+                ).join('')}
+            </div>
+            <div id="triviaResult" style="display:none; margin-top:20px;"></div>
+        </div>
+    `;
+    
+    return triviaHTML;
+}
+
 function createQuizGame() {
     const questions = [
         { q: "What's the most important thing in a family?", a: "Love and togetherness! ❤️" },
         { q: "What makes a house a home?", a: "The people who live in it with love! 🏠" },
-        { q: "Best family activity?", a: "Spending quality time together! 👨‍👩‍👧‍👦" }
+        { q: "What's the best family activity?", a: "Spending quality time together! 👨‍👩‍👧‍👦" },
+        { q: "What creates lasting family memories?", a: "Shared experiences and traditions! 📸" },
+        { q: "What's the key to family happiness?", a: "Communication and understanding! 💬" }
     ];
     
     const randomQ = questions[Math.floor(Math.random() * questions.length)];
@@ -1544,8 +1661,11 @@ function createQuizGame() {
     return `
         <div class="quiz-game">
             <h3>${randomQ.q}</h3>
-            <button onclick="showAnswer('${randomQ.a}')" class="quiz-btn">Show Answer</button>
+            <button onclick="showAnswer('${randomQ.a.replace(/'/g, '\\\'')}')" class="quiz-btn">💝 Show Answer</button>
             <div id="quiz-answer" style="display:none; margin-top:20px; padding:20px; background:rgba(255,255,255,0.1); border-radius:10px;"></div>
+            <div style="margin-top:15px;">
+                <button onclick="createNewQuiz()" class="quiz-btn" style="background:#4ecdc4;">🔄 New Question</button>
+            </div>
         </div>
     `;
 }
@@ -1553,11 +1673,24 @@ function createQuizGame() {
 function createDrawingGame() {
     return `
         <div class="drawing-game">
-            <canvas id="drawingCanvas" width="400" height="300" style="border: 2px solid #fff; border-radius: 10px; background: white;"></canvas>
-            <div class="drawing-controls" style="margin-top: 15px;">
-                <button onclick="clearCanvas()" class="draw-btn">Clear</button>
-                <input type="color" id="colorPicker" value="#ff6b6b" style="margin: 0 10px;">
-                <input type="range" id="brushSize" min="1" max="20" value="5" style="margin: 0 10px;">
+            <div class="drawing-toolbar">
+                <button onclick="clearCanvas()" class="draw-btn">🗑️ Clear</button>
+                <input type="color" id="colorPicker" value="#ff6b6b" title="Choose color">
+                <input type="range" id="brushSize" min="1" max="20" value="5" title="Brush size">
+                <button onclick="saveDrawing()" class="draw-btn">💾 Save</button>
+                <button onclick="undoDrawing()" class="draw-btn">↶ Undo</button>
+            </div>
+            <canvas id="drawingCanvas" width="400" height="300" style="border: 2px solid #fff; border-radius: 10px; background: white; touch-action: none;"></canvas>
+            <div class="drawing-presets">
+                <h4>Quick Colors:</h4>
+                <div class="color-presets">
+                    <div class="color-preset" style="background: #ff6b6b;" onclick="setColor('#ff6b6b')"></div>
+                    <div class="color-preset" style="background: #4ecdc4;" onclick="setColor('#4ecdc4')"></div>
+                    <div class="color-preset" style="background: #45b7d1;" onclick="setColor('#45b7d1')"></div>
+                    <div class="color-preset" style="background: #96ceb4;" onclick="setColor('#96ceb4')"></div>
+                    <div class="color-preset" style="background: #ffa500;" onclick="setColor('#ffa500')"></div>
+                    <div class="color-preset" style="background: #000000;" onclick="setColor('#000000')"></div>
+                </div>
             </div>
         </div>
     `;
@@ -1568,17 +1701,28 @@ function playMusicGame() {
         "🎵 Happy Birthday to You! 🎂",
         "🎵 Twinkle Twinkle Little Star ⭐",
         "🎵 Row Row Row Your Boat 🚣",
-        "🎵 If You're Happy and You Know It 😊"
+        "🎵 If You're Happy and You Know It 😊",
+        "🎵 Old MacDonald Had a Farm 🐄",
+        "🎵 The Wheels on the Bus 🚌"
     ];
     
     const randomSong = songs[Math.floor(Math.random() * songs.length)];
     showNotification(`Now playing: ${randomSong}`);
     
-    for (let i = 0; i < 10; i++) {
+    // Create more elaborate musical animation
+    for (let i = 0; i < 15; i++) {
         setTimeout(() => {
             createMusicalNote();
         }, i * 200);
     }
+    
+    // Play a melody sequence
+    playMelodySequence();
+    
+    // Show interactive music modal
+    setTimeout(() => {
+        showMusicGameModal(randomSong);
+    }, 1000);
 }
 
 function createMusicalNote() {
@@ -1604,6 +1748,247 @@ function updateGameCounter() {
     const counter = document.getElementById('gameCounter');
     if (counter) {
         counter.textContent = gameCounter;
+    }
+}
+
+// New game functions
+function showMusicGameModal(songTitle) {
+    const modal = document.createElement('div');
+    modal.className = 'game-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🎵 Music Time!</h2>
+                <p>${songTitle}</p>
+                <button class="close-modal" onclick="closeModal(this)">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <div class="music-visualizer">
+                    <div class="music-bars">
+                        ${Array.from({length: 8}, () => '<div class="music-bar"></div>').join('')}
+                    </div>
+                </div>
+                <div class="music-controls">
+                    <button onclick="playMelodySequence()" class="quiz-btn">🎼 Play Melody</button>
+                    <button onclick="createMusicalFireworks()" class="quiz-btn">🎆 Musical Fireworks</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function playMelodySequence() {
+    if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const melody = [523.25, 587.33, 659.25, 698.46, 783.99, 698.46, 659.25, 587.33, 523.25]; // C major scale
+        
+        melody.forEach((freq, i) => {
+            setTimeout(() => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            }, i * 300);
+        });
+    }
+}
+
+function createMusicalFireworks() {
+    for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+            createConfetti();
+            playMelodySequence();
+        }, i * 1000);
+    }
+}
+
+// Trivia game functions
+function selectTriviaAnswer(selected, correct, explanation) {
+    const options = document.querySelectorAll('.trivia-option');
+    const resultDiv = document.getElementById('triviaResult');
+    
+    options.forEach((option, index) => {
+        option.disabled = true;
+        if (index === correct) {
+            option.style.background = '#4CAF50';
+            option.style.color = 'white';
+        } else if (index === selected && selected !== correct) {
+            option.style.background = '#f44336';
+            option.style.color = 'white';
+        }
+    });
+    
+    const isCorrect = selected === correct;
+    resultDiv.innerHTML = `
+        <div style="padding: 20px; border-radius: 10px; background: rgba(255,255,255,0.1);">
+            <h4>${isCorrect ? '🎉 Correct!' : '❌ Not quite!'}</h4>
+            <p>${explanation}</p>
+            <button onclick="loadNewTrivia()" class="quiz-btn" style="margin-top: 10px;">🔄 New Question</button>
+        </div>
+    `;
+    resultDiv.style.display = 'block';
+    
+    if (isCorrect) {
+        createConfetti();
+        playLightClickSound();
+    }
+}
+
+function loadNewTrivia() {
+    const modalBody = document.querySelector('.game-modal .modal-body');
+    modalBody.innerHTML = createTriviaGame();
+}
+
+// Puzzle game functions
+let puzzleMoves = 0;
+
+function shufflePuzzle() {
+    const tiles = document.querySelectorAll('.puzzle-tile');
+    const positions = Array.from({length: 9}, (_, i) => i);
+    
+    // Shuffle positions
+    for (let i = positions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+    
+    tiles.forEach((tile, index) => {
+        tile.setAttribute('data-position', positions[index]);
+        tile.style.order = positions[index];
+    });
+    
+    puzzleMoves = 0;
+    updateMoveCount();
+    initializePuzzleEvents();
+}
+
+function solvePuzzle() {
+    const tiles = document.querySelectorAll('.puzzle-tile');
+    tiles.forEach((tile, index) => {
+        tile.setAttribute('data-position', index);
+        tile.style.order = index;
+    });
+    
+    showNotification('🎉 Puzzle solved! You\'re amazing!');
+    createConfetti();
+}
+
+function initializePuzzleEvents() {
+    const tiles = document.querySelectorAll('.puzzle-tile');
+    tiles.forEach(tile => {
+        tile.addEventListener('click', () => movePuzzleTile(tile));
+        tile.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            movePuzzleTile(tile);
+        });
+    });
+}
+
+function movePuzzleTile(tile) {
+    const emptyTile = document.querySelector('.puzzle-tile[data-empty="true"]');
+    const currentPos = parseInt(tile.getAttribute('data-position'));
+    const emptyPos = parseInt(emptyTile.getAttribute('data-position'));
+    
+    // Check if tiles are adjacent
+    const isAdjacent = (
+        (Math.abs(currentPos - emptyPos) === 1 && Math.floor(currentPos / 3) === Math.floor(emptyPos / 3)) ||
+        Math.abs(currentPos - emptyPos) === 3
+    );
+    
+    if (isAdjacent) {
+        tile.setAttribute('data-position', emptyPos);
+        emptyTile.setAttribute('data-position', currentPos);
+        tile.style.order = emptyPos;
+        emptyTile.style.order = currentPos;
+        
+        puzzleMoves++;
+        updateMoveCount();
+        
+        if (checkPuzzleSolved()) {
+            setTimeout(() => {
+                showNotification('🎉 Puzzle completed! Well done!');
+                createConfetti();
+            }, 300);
+        }
+    }
+}
+
+function checkPuzzleSolved() {
+    const tiles = document.querySelectorAll('.puzzle-tile');
+    return Array.from(tiles).every((tile, index) => {
+        return parseInt(tile.getAttribute('data-position')) === index;
+    });
+}
+
+function updateMoveCount() {
+    const moveCounter = document.getElementById('moveCount');
+    if (moveCounter) {
+        moveCounter.textContent = puzzleMoves;
+    }
+}
+
+// Drawing game enhancements
+let drawingHistory = [];
+let currentDrawingStep = -1;
+
+function setColor(color) {
+    const colorPicker = document.getElementById('colorPicker');
+    if (colorPicker) {
+        colorPicker.value = color;
+    }
+}
+
+function saveDrawing() {
+    const canvas = document.getElementById('drawingCanvas');
+    if (canvas) {
+        const link = document.createElement('a');
+        link.download = 'family-drawing.png';
+        link.href = canvas.toDataURL();
+        link.click();
+        showNotification('🎨 Drawing saved! Keep creating!');
+    }
+}
+
+function undoDrawing() {
+    if (currentDrawingStep > 0) {
+        currentDrawingStep--;
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const imageData = drawingHistory[currentDrawingStep];
+        ctx.putImageData(imageData, 0, 0);
+    }
+}
+
+function saveDrawingState() {
+    const canvas = document.getElementById('drawingCanvas');
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    
+    currentDrawingStep++;
+    drawingHistory = drawingHistory.slice(0, currentDrawingStep);
+    drawingHistory.push(imageData);
+    
+    // Limit history to 20 steps
+    if (drawingHistory.length > 20) {
+        drawingHistory.shift();
+        currentDrawingStep--;
+    }
+}
+
+// Quiz game enhancements
+function createNewQuiz() {
+    const quizContainer = document.querySelector('.quiz-game');
+    if (quizContainer) {
+        quizContainer.innerHTML = createQuizGame().replace('<div class="quiz-game">', '').replace('</div>', '');
     }
 }
 
@@ -1675,6 +2060,7 @@ function showGameModal(title, subtitle, content) {
                 font-size: 1.5rem;
                 cursor: pointer;
                 line-height: 1;
+                touch-action: manipulation;
             }
             
             .memory-game {
@@ -1695,12 +2081,161 @@ function showGameModal(title, subtitle, content) {
                 cursor: pointer;
                 transition: all 0.3s ease;
                 font-size: 1.5rem;
+                user-select: none;
+                touch-action: manipulation;
+                position: relative;
             }
             
-            .memory-card:hover {
+            .memory-card:hover, .memory-card:active {
                 transform: scale(1.05);
                 background: rgba(255, 255, 255, 0.3);
             }
+            
+            .memory-card .card-front,
+            .memory-card .card-back {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                backface-visibility: hidden;
+                transition: transform 0.6s;
+            }
+            
+            .memory-card .card-back {
+                transform: rotateY(180deg);
+            }
+            
+            .memory-card.flipped .card-front {
+                transform: rotateY(180deg);
+            }
+            
+            .memory-card.flipped .card-back {
+                transform: rotateY(0deg);
+            }
+            
+            /* Puzzle Game Styles */
+            .puzzle-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2px;
+                max-width: 300px;
+                margin: 0 auto 20px;
+                background: #333;
+                padding: 10px;
+                border-radius: 10px;
+            }
+            
+            .puzzle-tile {
+                aspect-ratio: 1;
+                background: linear-gradient(45deg, #ff6b6b, #ffa500);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: white;
+                cursor: pointer;
+                border-radius: 5px;
+                transition: all 0.3s ease;
+                user-select: none;
+                touch-action: manipulation;
+            }
+            
+            .puzzle-tile[data-empty="true"] {
+                background: transparent;
+                cursor: default;
+            }
+            
+            .puzzle-tile:not([data-empty="true"]):hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            }
+            
+            /* Trivia Game Styles */
+            .trivia-options {
+                display: grid;
+                gap: 10px;
+                margin: 20px 0;
+            }
+            
+            .trivia-option {
+                background: rgba(255, 255, 255, 0.2);
+                border: none;
+                color: white;
+                padding: 15px;
+                border-radius: 10px;
+                cursor: pointer;
+                font-size: 1rem;
+                transition: all 0.3s ease;
+                touch-action: manipulation;
+            }
+            
+            .trivia-option:hover:not(:disabled) {
+                background: rgba(255, 255, 255, 0.3);
+                transform: translateY(-2px);
+            }
+            
+            /* Drawing Game Styles */
+            .drawing-toolbar {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 15px;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .color-presets {
+                display: flex;
+                gap: 5px;
+                justify-content: center;
+                margin-top: 10px;
+            }
+            
+            .color-preset {
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                cursor: pointer;
+                border: 2px solid white;
+                transition: transform 0.2s ease;
+                touch-action: manipulation;
+            }
+            
+            .color-preset:hover, .color-preset:active {
+                transform: scale(1.2);
+            }
+            
+            /* Music Game Styles */
+            .music-visualizer {
+                margin: 20px 0;
+            }
+            
+            .music-bars {
+                display: flex;
+                justify-content: center;
+                align-items: end;
+                gap: 5px;
+                height: 100px;
+            }
+            
+            .music-bar {
+                width: 20px;
+                background: linear-gradient(to top, #ff6b6b, #ffa500);
+                border-radius: 10px;
+                animation: musicBars 1s infinite alternate;
+            }
+            
+            .music-bar:nth-child(1) { animation-delay: 0s; height: 20%; }
+            .music-bar:nth-child(2) { animation-delay: 0.1s; height: 40%; }
+            .music-bar:nth-child(3) { animation-delay: 0.2s; height: 60%; }
+            .music-bar:nth-child(4) { animation-delay: 0.3s; height: 80%; }
+            .music-bar:nth-child(5) { animation-delay: 0.4s; height: 100%; }
+            .music-bar:nth-child(6) { animation-delay: 0.5s; height: 70%; }
+            .music-bar:nth-child(7) { animation-delay: 0.6s; height: 50%; }
+            .music-bar:nth-child(8) { animation-delay: 0.7s; height: 30%; }
             
             .quiz-btn, .draw-btn {
                 background: #ff6b6b;
@@ -1711,6 +2246,8 @@ function showGameModal(title, subtitle, content) {
                 cursor: pointer;
                 font-weight: 600;
                 transition: all 0.3s ease;
+                touch-action: manipulation;
+                font-size: 1rem;
             }
             
             .quiz-btn:hover, .draw-btn:hover {
@@ -1718,17 +2255,69 @@ function showGameModal(title, subtitle, content) {
                 box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             }
             
+            .game-stats {
+                text-align: center;
+                margin-top: 15px;
+                font-size: 1.1rem;
+                font-weight: bold;
+            }
+            
             @keyframes modalFadeIn {
                 from { opacity: 0; transform: scale(0.8); }
                 to { opacity: 1; transform: scale(1); }
+            }
+            
+            @keyframes musicBars {
+                from { height: 10%; }
+                to { height: 100%; }
+            }
+            
+            /* Mobile responsive styles */
+            @media (max-width: 768px) {
+                .modal-content {
+                    width: 95%;
+                    padding: 20px;
+                    max-height: 90vh;
+                }
+                
+                .memory-game {
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 8px;
+                }
+                
+                .memory-card {
+                    font-size: 1.2rem;
+                }
+                
+                .puzzle-grid {
+                    max-width: 250px;
+                }
+                
+                .drawing-toolbar {
+                    flex-direction: column;
+                    gap: 8px;
+                }
+                
+                #drawingCanvas {
+                    max-width: 100%;
+                    height: auto;
+                }
             }
         `;
         document.head.appendChild(modalStyles);
     }
     
-    if (content.includes('drawingCanvas')) {
-        setTimeout(() => initializeDrawingCanvas(), 100);
-    }
+    // Initialize game-specific events after modal is added
+    setTimeout(() => {
+        if (content.includes('drawingCanvas')) {
+            initializeDrawingCanvas();
+        } else if (content.includes('memoryGameGrid')) {
+            initializeMemoryGameEvents();
+        } else if (content.includes('puzzleGrid')) {
+            initializePuzzleEvents();
+            shufflePuzzle();
+        }
+    }, 100);
 }
 
 function closeModal(element) {
@@ -1740,11 +2329,79 @@ function closeModal(element) {
 // Drawing game functionality
 function initializeDrawingCanvas() {
     const canvas = document.getElementById('drawingCanvas');
+    if (!canvas) return;
+    
     const ctx = canvas.getContext('2d');
     const colorPicker = document.getElementById('colorPicker');
     const brushSize = document.getElementById('brushSize');
     
     let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    
+    // Initialize drawing history
+    drawingHistory = [];
+    currentDrawingStep = -1;
+    saveDrawingState(); // Save initial blank state
+    
+    // Set initial canvas properties
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // Universal coordinate function
+    function getCoordinates(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        let clientX, clientY;
+        
+        if (e.touches && e.touches[0]) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+    
+    function startDrawing(e) {
+        isDrawing = true;
+        const coords = getCoordinates(e);
+        lastX = coords.x;
+        lastY = coords.y;
+        
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+    }
+    
+    function draw(e) {
+        if (!isDrawing) return;
+        
+        const coords = getCoordinates(e);
+        
+        ctx.strokeStyle = colorPicker.value;
+        ctx.lineWidth = brushSize.value;
+        
+        ctx.lineTo(coords.x, coords.y);
+        ctx.stroke();
+        
+        lastX = coords.x;
+        lastY = coords.y;
+    }
+    
+    function stopDrawing() {
+        if (isDrawing) {
+            isDrawing = false;
+            ctx.beginPath();
+            saveDrawingState(); // Save state after drawing
+        }
+    }
     
     // Mouse events
     canvas.addEventListener('mousedown', startDrawing);
@@ -1753,67 +2410,31 @@ function initializeDrawingCanvas() {
     canvas.addEventListener('mouseout', stopDrawing);
     
     // Touch events for mobile
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-    
-    function handleTouchStart(e) {
+    canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        const touch = e.touches[0];
-        const mouseEvent = new MouseEvent('mousedown', {
-            clientX: touch.clientX,
-            clientY: touch.clientY
-        });
-        canvas.dispatchEvent(mouseEvent);
-    }
+        startDrawing(e);
+    }, { passive: false });
     
-    function handleTouchMove(e) {
+    canvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
-        const touch = e.touches[0];
-        const mouseEvent = new MouseEvent('mousemove', {
-            clientX: touch.clientX,
-            clientY: touch.clientY
-        });
-        canvas.dispatchEvent(mouseEvent);
-    }
-    
-    function handleTouchEnd(e) {
-        e.preventDefault();
-        const mouseEvent = new MouseEvent('mouseup', {});
-        canvas.dispatchEvent(mouseEvent);
-    }
-    
-    function startDrawing(e) {
-        isDrawing = true;
         draw(e);
-    }
+    }, { passive: false });
     
-    function draw(e) {
-        if (!isDrawing) return;
-        
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        ctx.lineWidth = brushSize.value;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = colorPicker.value;
-        
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-    }
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        stopDrawing();
+    }, { passive: false });
     
-    function stopDrawing() {
-        if (isDrawing) {
-            isDrawing = false;
-            ctx.beginPath();
-        }
-    }
+    // Prevent scrolling when touching the canvas
+    canvas.style.touchAction = 'none';
     
+    // Global clear function
     window.clearCanvas = function() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawingHistory = [];
+        currentDrawingStep = -1;
+        saveDrawingState();
+        showNotification('🎨 Canvas cleared! Ready for new art!');
     };
 }
 
@@ -1830,17 +2451,20 @@ let flippedCards = [];
 let matchedPairs = 0;
 
 function flipCard(card, index) {
-    if (flippedCards.length >= 2 || card.classList.contains('flipped')) return;
+    if (flippedCards.length >= 2 || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+    
+    // Add haptic feedback for mobile
+    if (isMobileDevice() && navigator.vibrate) {
+        navigator.vibrate(50);
+    }
     
     card.classList.add('flipped');
-    card.style.transform = 'rotateY(180deg)';
-    card.querySelector('.card-front').style.display = 'none';
-    card.querySelector('.card-back').style.display = 'block';
-    
     flippedCards.push(card);
     
+    playLightClickSound();
+    
     if (flippedCards.length === 2) {
-        setTimeout(checkMatch, 500);
+        setTimeout(checkMatch, 800);
     }
 }
 
@@ -1850,25 +2474,38 @@ function checkMatch() {
     const emoji2 = card2.getAttribute('data-emoji');
     
     if (emoji1 === emoji2) {
+        // Match found!
         matchedPairs++;
-        card1.style.background = 'rgba(76, 175, 80, 0.3)';
-        card2.style.background = 'rgba(76, 175, 80, 0.3)';
+        card1.classList.add('matched');
+        card2.classList.add('matched');
+        card1.style.background = 'rgba(76, 175, 80, 0.6)';
+        card2.style.background = 'rgba(76, 175, 80, 0.6)';
         
+        // Update pairs counter
+        const pairsCounter = document.getElementById('pairsFound');
+        if (pairsCounter) {
+            pairsCounter.textContent = matchedPairs;
+        }
+        
+        // Check if game is won
         if (matchedPairs === 8) {
             setTimeout(() => {
-                showNotification('🎉 Congratulations! You matched all pairs!');
+                showNotification('🎉 Congratulations! You matched all pairs! Memory champion! 🏆');
+                createConfetti();
+                
+                // Add haptic feedback for victory
+                if (isMobileDevice() && navigator.vibrate) {
+                    navigator.vibrate([100, 50, 100, 50, 200]);
+                }
             }, 500);
+        } else {
+            showNotification(`🎯 Great match! ${8 - matchedPairs} pairs left!`);
         }
     } else {
+        // No match - flip cards back
         setTimeout(() => {
             card1.classList.remove('flipped');
             card2.classList.remove('flipped');
-            card1.style.transform = 'rotateY(0deg)';
-            card2.style.transform = 'rotateY(0deg)';
-            card1.querySelector('.card-front').style.display = 'block';
-            card1.querySelector('.card-back').style.display = 'none';
-            card2.querySelector('.card-front').style.display = 'block';
-            card2.querySelector('.card-back').style.display = 'none';
         }, 500);
     }
     
