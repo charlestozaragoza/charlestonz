@@ -9,34 +9,178 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeFormHandling();
     initializeSocialMediaLinks();
     initializeVisitorSharing();
+    initializeMobileControls();
     updateGameCounter();
 });
+
+// Initialize mobile-specific controls
+function initializeMobileControls() {
+    // Add touch support for interactive buttons
+    const interactiveButtons = document.querySelectorAll('button, .btn, .tab-btn, .game-btn, .photo-item, .video-item, .story-item');
+    
+    interactiveButtons.forEach(button => {
+        // Add touch action to prevent double-tap zoom
+        button.style.touchAction = 'manipulation';
+        
+        // Add touch feedback
+        button.addEventListener('touchstart', function(e) {
+            this.classList.add('touch-active');
+            this.style.transform = 'scale(0.95)';
+        });
+        
+        button.addEventListener('touchend', function(e) {
+            setTimeout(() => {
+                this.classList.remove('touch-active');
+                this.style.transform = '';
+            }, 150);
+        });
+    });
+    
+    // Optimize viewport for mobile
+    if (isMobileDevice()) {
+        // Prevent zoom on form inputs
+        const inputs = document.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.addEventListener('touchstart', function() {
+                this.style.fontSize = '16px'; // Prevents zoom on iOS
+            });
+        });
+        
+        // Add mobile-specific CSS
+        addMobileStyles();
+    }
+}
+
+// Add mobile-specific styles
+function addMobileStyles() {
+    const mobileStyles = document.createElement('style');
+    mobileStyles.id = 'mobile-styles';
+    mobileStyles.textContent = `
+        @media (max-width: 768px) {
+            /* Touch-friendly button sizes */
+            button, .btn, .tab-btn {
+                min-height: 44px;
+                min-width: 44px;
+                padding: 12px 20px;
+                font-size: 16px;
+            }
+            
+            /* Prevent text selection on touch */
+            .social-card, .memory-card, .photo-item, .video-item, .story-item {
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+            
+            /* Touch feedback */
+            .touch-active {
+                background-color: rgba(255, 255, 255, 0.1) !important;
+                transition: all 0.1s ease;
+            }
+            
+            /* Prevent zoom on inputs */
+            input, textarea, select {
+                font-size: 16px !important;
+            }
+            
+            /* Larger tap targets for mobile */
+            .social-card {
+                min-height: 60px;
+                padding: 15px;
+            }
+            
+            .memory-card {
+                min-height: 60px;
+                font-size: 1.8rem;
+            }
+            
+            /* Better spacing for mobile */
+            .section {
+                padding: 20px 15px;
+            }
+            
+            /* Optimize notifications for mobile */
+            .notification {
+                right: 10px !important;
+                left: 10px !important;
+                max-width: calc(100vw - 20px) !important;
+            }
+            
+            /* Better modal sizing for mobile */
+            .modal-content {
+                width: 95% !important;
+                margin: 10px !important;
+                max-height: 90vh !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* Extra small screens */
+            .memory-game {
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 8px !important;
+            }
+            
+            .social-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+            }
+        }
+    `;
+    document.head.appendChild(mobileStyles);
+}
 
 // Initialize social media link interactions
 function initializeSocialMediaLinks() {
     const socialCards = document.querySelectorAll('.social-card');
     
     socialCards.forEach(card => {
+        // Mouse events
         card.addEventListener('click', function(e) {
-            // Add click effect
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = '';
-            }, 150);
-            
-            // Show notification
-            const platform = this.querySelector('span').textContent;
-            showNotification(`🌐 Opening ${platform}! Stay connected with our family!`);
-            
-            // Add sparkle effect
-            createSocialSparkles(this);
+            handleSocialCardInteraction(this);
         });
         
-        // Add hover sound effect
+        // Touch events for mobile
+        card.addEventListener('touchstart', function(e) {
+            e.preventDefault(); // Prevent double-tap zoom
+            this.style.touchAction = 'manipulation';
+            handleSocialCardInteraction(this);
+        });
+        
+        // Add hover sound effect (desktop only)
         card.addEventListener('mouseenter', function() {
-            playLightClickSound();
+            if (!isMobileDevice()) {
+                playLightClickSound();
+            }
         });
     });
+}
+
+// Handle social card interaction for both mouse and touch
+function handleSocialCardInteraction(card) {
+    // Add click effect
+    card.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        card.style.transform = '';
+    }, 150);
+    
+    // Show notification
+    const platform = card.querySelector('span').textContent;
+    showNotification(`🌐 Opening ${platform}! Stay connected with our family!`);
+    
+    // Add sparkle effect
+    createSocialSparkles(card);
+    
+    // Play sound
+    playLightClickSound();
+}
+
+// Detect if device is mobile
+function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           ('ontouchstart' in window) || 
+           (navigator.maxTouchPoints > 0);
 }
 
 // Create sparkle effect for social media cards
@@ -92,6 +236,13 @@ function initializeVisitorSharing() {
     initializeSampleContent();
     initializeFileUploads();
     initializeStoryForm();
+    
+    // Initialize mobile gallery items after content is loaded
+    if (isMobileDevice()) {
+        setTimeout(() => {
+            initializeMobileGalleryItems();
+        }, 100);
+    }
 }
 
 // Switch between sharing tabs
@@ -106,7 +257,30 @@ function switchTab(tabName) {
     
     // Add active class to selected tab and button
     document.getElementById(tabName + '-tab').classList.add('active');
-    event.target.classList.add('active');
+    
+    // Handle both click and touch events
+    const targetButton = event.target || event.currentTarget;
+    if (targetButton) {
+        targetButton.classList.add('active');
+    }
+    
+    playLightClickSound();
+    showNotification(`📋 Switched to ${tabName.charAt(0).toUpperCase() + tabName.slice(1)} tab!`);
+}
+
+// Enhanced tab switching for mobile
+function handleTabSwitch(tabName, buttonElement) {
+    // Remove active class from all tabs and buttons
+    document.querySelectorAll('.sharing-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Add active class to selected tab and button
+    document.getElementById(tabName + '-tab').classList.add('active');
+    buttonElement.classList.add('active');
     
     playLightClickSound();
     showNotification(`📋 Switched to ${tabName.charAt(0).toUpperCase() + tabName.slice(1)} tab!`);
@@ -140,6 +314,21 @@ function initializeSampleContent() {
             playLightClickSound();
         });
         photoGallery.appendChild(photoItem);
+        
+        // Add mobile touch support for the new item
+        if (isMobileDevice()) {
+            photoItem.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                this.style.transform = 'scale(0.98)';
+            });
+            
+            photoItem.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 100);
+            });
+        }
     });
     
     // Sample videos
@@ -167,6 +356,21 @@ function initializeSampleContent() {
             playLightClickSound();
         });
         videoGallery.appendChild(videoItem);
+        
+        // Add mobile touch support for the new item
+        if (isMobileDevice()) {
+            videoItem.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                this.style.transform = 'scale(0.98)';
+            });
+            
+            videoItem.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 100);
+            });
+        }
     });
     
     // Sample stories
@@ -238,8 +442,45 @@ function initializeFileUploads() {
 // Trigger file upload
 function triggerFileUpload(type) {
     const uploadInput = document.getElementById(type + '-upload');
+    
+    // Add mobile-friendly handling
+    if (isMobileDevice()) {
+        // Add visual feedback for mobile
+        const button = event.target || event.currentTarget;
+        if (button) {
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 150);
+        }
+    }
+    
     uploadInput.click();
     playLightClickSound();
+}
+
+// Enhanced mobile touch handling for photo/video items
+function initializeMobileGalleryItems() {
+    const galleryItems = document.querySelectorAll('.photo-item, .video-item');
+    
+    galleryItems.forEach(item => {
+        // Add touch events for mobile
+        item.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            this.style.transform = 'scale(0.98)';
+            this.style.transition = 'transform 0.1s ease';
+        });
+        
+        item.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 100);
+            
+            // Trigger the click event
+            this.click();
+        });
+    });
 }
 
 // Handle file upload
@@ -810,7 +1051,7 @@ function createMemoryGame() {
     
     let gameHTML = '<div class="memory-game">';
     gameEmojis.forEach((emoji, index) => {
-        gameHTML += `<div class="memory-card" data-emoji="${emoji}" onclick="flipCard(this, ${index})">
+        gameHTML += `<div class="memory-card" data-emoji="${emoji}" onclick="flipCard(this, ${index})" ontouchstart="handleCardTouch(this, ${index})">
             <div class="card-front">?</div>
             <div class="card-back">${emoji}</div>
         </div>`;
@@ -818,6 +1059,13 @@ function createMemoryGame() {
     gameHTML += '</div>';
     
     return gameHTML;
+}
+
+// Handle touch events for memory cards
+function handleCardTouch(card, index) {
+    // Prevent double-tap zoom on mobile
+    card.style.touchAction = 'manipulation';
+    flipCard(card, index);
 }
 
 function createQuizGame() {
@@ -1034,10 +1282,42 @@ function initializeDrawingCanvas() {
     
     let isDrawing = false;
     
+    // Mouse events
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseout', stopDrawing);
+    
+    // Touch events for mobile
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    
+    function handleTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousedown', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+    }
+    
+    function handleTouchMove(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousemove', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+    }
+    
+    function handleTouchEnd(e) {
+        e.preventDefault();
+        const mouseEvent = new MouseEvent('mouseup', {});
+        canvas.dispatchEvent(mouseEvent);
+    }
     
     function startDrawing(e) {
         isDrawing = true;
